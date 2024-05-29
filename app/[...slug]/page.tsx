@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from 'react'
 
+import { Button } from "@/components/ui/button"
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form"
+import { useForm } from "react-hook-form"
+import { Textarea } from "@/components/ui/textarea"
+import Image from 'next/image'
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+
 function isValidUrl(url: string): boolean {
   // Checks if the given url is valid
   // Uses regex for any URL that is a base URL, has a subdomain, or a path
@@ -41,11 +49,17 @@ function invalidPage( url : string | string[] ) {
   )
 }
 
+const formSchema = z.object({
+  message: z.string().max(5000),
+})
+
 export default function DynamicPage({ params } : { params: { slug: string | string[] } }) {
   const [fullPageLoading, setFullPageLoading] = useState(true)
+  const [fileID, setFileID] = useState('')
+  const [gptResponse, setGptResponse] = useState('')
+  const [responseLoading, setResponseLoading] = useState(false)
 
   const slug = params.slug
-  console.log(`Received slug ${slug}`)
 
   let validSlug: boolean = true
   if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
@@ -64,8 +78,6 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     validSlug = false
     return invalidPage(slug)
   }
-  console.log(`Decoded slug as: ${userURL}`)
-  console.log(`URL is valid: ${validSlug}`)
 
   useEffect(() => {
     // Fetch data from the server-side API
@@ -78,7 +90,7 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
           })
         })
         const data = await res.json()
-        console.log(`Data: ${data}`)
+        setFileID(data.fileID)
         setFullPageLoading(false)
       } catch (error) {
         console.error('Error:', error)
@@ -89,9 +101,65 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     fetchData()
   }, [])
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      message: "",
+    },
+  })
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const msg = values.message
+    
+    try {
+      setResponseLoading(true)
+      const res = await fetch('/api/gpt', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_url: userURL,
+          user_query: msg,
+        })
+      })
+      const data = await res.json()
+      setGptResponse(data.message)
+      setResponseLoading(false)
+    } catch(err) {
+      setGptResponse('Error')
+    }    
+  }
+
   return (
     <div>
-      <h1>Dynamic Page for : {userURL}</h1>
+      <div className="p-10">
+        <h1 className="pb-2 text-2xl">Ask: {userURL}</h1>
+
+        <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="message"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ask GPT:</FormLabel>
+                <FormControl>
+                  <Textarea className="" placeholder="Ask me..." {...field} />
+                </FormControl>
+                <FormDescription>
+                  Chat with the website.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit">Submit</Button>
+          <div>{
+            // Taken from https://tenor.com/view/kakaotalk-emoticon-ompangie-pentol-buffering-gif-18260464
+            // @kueape on tenor.com
+            responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
+          }</div>
+        </form>
+        </Form>
+      </div>
     </div>
   )
 }
