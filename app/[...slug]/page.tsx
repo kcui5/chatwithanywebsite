@@ -1,3 +1,7 @@
+"use client"
+
+import { useEffect, useState } from 'react'
+
 function isValidUrl(url: string): boolean {
   // Checks if the given url is valid
   // Uses regex for any URL that is a base URL, has a subdomain, or a path
@@ -12,7 +16,7 @@ function isHttpOrHttps(urlHeader: string): boolean {
 }
 
 function getDecodedUrlHeader(url: string): string {
-  //Checks if the URL is HTTPS
+  //Decodes url header into http or https
   if (url === "https%3A") {
     return "https://"
   } else if (url === "http%3A") {
@@ -28,33 +32,66 @@ function decodeSlug(slug: string | string[]): string {
   return decodeURIComponent(slug);
 }
 
+function invalidPage( url : string | string[] ) {
+  return (
+    <div>
+      <h1>Dynamic Page for : {url}</h1>
+      <h1>This URL is invalid :&#40;</h1>
+    </div>
+  )
+}
+
 export default function DynamicPage({ params } : { params: { slug: string | string[] } }) {
-    const slug = params.slug
-    console.log(`Received slug ${slug}`)
+  const [fullPageLoading, setFullPageLoading] = useState(true)
 
-    let validSlug: boolean = true
-    if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
-      validSlug = false
+  const slug = params.slug
+  console.log(`Received slug ${slug}`)
+
+  let validSlug: boolean = true
+  if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
+    validSlug = false
+    return invalidPage(slug)
+  }
+
+  const urlHeader = getDecodedUrlHeader(slug[0])
+  if (urlHeader === "ERROR") {
+    validSlug = false
+    return invalidPage(slug)
+  }
+  const decodedSlug = decodeSlug(slug.slice(1))
+  const userURL = urlHeader + decodedSlug
+  if (!isValidUrl(userURL)) {
+    validSlug = false
+    return invalidPage(slug)
+  }
+  console.log(`Decoded slug as: ${userURL}`)
+  console.log(`URL is valid: ${validSlug}`)
+
+  useEffect(() => {
+    // Fetch data from the server-side API
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/modal', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_url: userURL,
+          })
+        })
+        const data = await res.json()
+        console.log(`Data: ${data}`)
+        setFullPageLoading(false)
+      } catch (error) {
+        console.error('Error:', error)
+        return invalidPage(userURL)
+      }
     }
 
-    const urlHeader = getDecodedUrlHeader(slug[0])
-    if (urlHeader === "ERROR") {
-      validSlug = false
-    }
-    const decodedSlug = decodeSlug(slug.slice(1))
-    const userURL = urlHeader + decodedSlug
-    if (!isValidUrl(userURL)) {
-      validSlug = false
-    }
-    console.log(`Decoded slug as: ${userURL}`)
-    console.log(`URL is valid: ${validSlug}`)
+    fetchData()
+  }, [])
 
-    return (
-      <div>
-        <h1>Dynamic Page for : {userURL}</h1>
-        <div>{
-          !validSlug && <h1>This URL is invalid :&#40;</h1>
-        }</div>
-      </div>
-    )
+  return (
+    <div>
+      <h1>Dynamic Page for : {userURL}</h1>
+    </div>
+  )
 }
