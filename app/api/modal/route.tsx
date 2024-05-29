@@ -10,14 +10,20 @@ export async function POST(req: Request) {
 
         const response = await axios.post('https://kcui5--handler-py-addwebsitetoknowledge-dev.modal.run', {
             user_url: user_url,
+        }, {
+            headers: {
+                "Authorization": `Bearer ${process.env.CHATWITHANYWEBSITE_KEY}`,
+            },
         })
-
+        console.log("Received status: ")
         console.log(response.data)
-
-        return NextResponse.json({ fileID: response.data }, { status: 200 })
+        if (response.data !== "Success") {
+            return NextResponse.json({ status: response.data }, { status: 500 })
+        }
+        return NextResponse.json({ status: response.data }, { status: 200 })
     } catch(err) {
-        console.log("MODAL CALL ERROR")
+        console.log("Error when adding website to knowledge base: ")
         console.log(err)
-        return NextResponse.json({ message: 'Error' }, { status: 500 })
+        return NextResponse.json({ status: 'Error' }, { status: 500 })
     }
 }

@@ -55,11 +55,43 @@ const formSchema = z.object({
 
 export default function DynamicPage({ params } : { params: { slug: string | string[] } }) {
   const [fullPageLoading, setFullPageLoading] = useState(true)
-  const [fileID, setFileID] = useState('')
   const [gptResponse, setGptResponse] = useState('')
   const [responseLoading, setResponseLoading] = useState(false)
 
   const slug = params.slug
+
+  let userURL = ""
+
+  useEffect(() => {
+    // Fetch data from the server-side API
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/modal', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_url: userURL,
+          })
+        })
+        const data = await res.json()
+        if (data.status !== "Success") {
+          return invalidPage(userURL)
+        }
+        setFullPageLoading(false)
+      } catch (error) {
+        console.error('Error:', error)
+        return invalidPage(userURL)
+      }
+    }
+
+    fetchData()
+  }, [userURL])
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      message: "",
+    },
+  })
 
   let validSlug: boolean = true
   if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
@@ -73,40 +105,11 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     return invalidPage(slug)
   }
   const decodedSlug = decodeSlug(slug.slice(1))
-  const userURL = urlHeader + decodedSlug
+  userURL = urlHeader + decodedSlug
   if (!isValidUrl(userURL)) {
     validSlug = false
     return invalidPage(slug)
   }
-
-  useEffect(() => {
-    // Fetch data from the server-side API
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/modal', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_url: userURL,
-          })
-        })
-        const data = await res.json()
-        setFileID(data.fileID)
-        setFullPageLoading(false)
-      } catch (error) {
-        console.error('Error:', error)
-        return invalidPage(userURL)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      message: "",
-    },
-  })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const msg = values.message
@@ -131,8 +134,12 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
   return (
     <div>
       <div className="p-10">
-        <h1 className="pb-2 text-2xl">Ask: {userURL}</h1>
-
+        <div>{
+          fullPageLoading && <h1 className="pb-2 text-2xl">Loading: {userURL}</h1>
+        }</div>
+        <div>{
+          !fullPageLoading && <h1 className="pb-2 text-2xl">Ask: {userURL}</h1>
+        }</div>
         <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -157,6 +164,7 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
             // @kueape on tenor.com
             responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
           }</div>
+          <div>{gptResponse}</div>
         </form>
         </Form>
       </div>
