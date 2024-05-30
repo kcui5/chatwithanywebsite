@@ -40,13 +40,24 @@ function decodeSlug(slug: string | string[]): string {
   return decodeURIComponent(slug);
 }
 
-function invalidPage( url : string | string[] ) {
-  return (
-    <div>
-      <h1>Dynamic Page for : {url}</h1>
-      <h1>This URL is invalid :&#40;</h1>
-    </div>
-  )
+function getUserUrl(slug: string | string[]): string {
+  if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
+    return "invalid"
+  }
+
+  const urlHeader = getDecodedUrlHeader(slug[0])
+  if (urlHeader === "ERROR") {
+    return "invalid"
+  }
+  for (let i = 0; i < slug.length; i++) {
+    console.log(slug[i])
+  }
+  const decodedSlug = decodeSlug(slug.slice(1))
+  let userURL = urlHeader + decodedSlug
+  if (!isValidUrl(userURL)) {
+    return "invalid"
+  }
+  return userURL
 }
 
 const formSchema = z.object({
@@ -54,16 +65,18 @@ const formSchema = z.object({
 })
 
 export default function DynamicPage({ params } : { params: { slug: string | string[] } }) {
+  //QUERY PARAMETERS ???
   const [fullPageLoading, setFullPageLoading] = useState(true)
+  const [invalidURL, setInvalidURL] = useState(false)
   const [gptResponse, setGptResponse] = useState('')
   const [responseLoading, setResponseLoading] = useState(false)
 
   const slug = params.slug
+  console.log(slug)
 
   let userURL = ""
 
   useEffect(() => {
-    // Fetch data from the server-side API
     async function fetchData() {
       try {
         const res = await fetch('/api/modal', {
@@ -73,17 +86,18 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
           })
         })
         const data = await res.json()
+
         if (data.status !== "Success") {
-          return invalidPage(userURL)
+          setInvalidURL(true)
         }
         setFullPageLoading(false)
       } catch (error) {
-        console.error('Error:', error)
-        return invalidPage(userURL)
+        setInvalidURL(true)
       }
     }
-
-    fetchData()
+    if (userURL !== "invalid") {
+      fetchData()
+    }
   }, [userURL])
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -93,27 +107,12 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     },
   })
 
-  let validSlug: boolean = true
-  if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
-    validSlug = false
-    return invalidPage(slug)
-  }
-
-  const urlHeader = getDecodedUrlHeader(slug[0])
-  if (urlHeader === "ERROR") {
-    validSlug = false
-    return invalidPage(slug)
-  }
-  const decodedSlug = decodeSlug(slug.slice(1))
-  userURL = urlHeader + decodedSlug
-  if (!isValidUrl(userURL)) {
-    validSlug = false
-    return invalidPage(slug)
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const msg = values.message
     
+    if (msg.length === 0) {
+      return
+    }
     try {
       setResponseLoading(true)
       const res = await fetch('/api/gpt', {
@@ -131,14 +130,23 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     }    
   }
 
+  userURL = getUserUrl(slug)
+
+  if (userURL === "invalid") {
+    setInvalidURL(true)
+  }
+
   return (
     <div>
       <div className="p-10">
         <div>{
-          fullPageLoading && <h1 className="pb-2 text-2xl">Loading: {userURL}</h1>
+          invalidURL && <h1 className="pb-2 text-2xl">Invalid URL {userURL}</h1>
         }</div>
         <div>{
-          !fullPageLoading && <h1 className="pb-2 text-2xl">Ask: {userURL}</h1>
+          fullPageLoading && <h1 className="pb-2 text-2xl">Loading... {userURL}</h1>
+        }</div>
+        <div>{
+          !fullPageLoading && <h1 className="pb-2 text-2xl">Ask {userURL}</h1>
         }</div>
         <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

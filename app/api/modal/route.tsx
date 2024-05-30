@@ -18,6 +18,7 @@ export async function POST(req: Request) {
         console.log("Received status: ")
         console.log(response.data)
         if (response.data !== "Success") {
+            console.log("Error adding to knowledge base")
             return NextResponse.json({ status: response.data }, { status: 500 })
         }
         return NextResponse.json({ status: response.data }, { status: 200 })
