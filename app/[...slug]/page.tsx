@@ -170,7 +170,7 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
             )}
           />
           <Button type="submit">Submit</Button>
-          <div>{
+          <div className="h-24">{
             // Taken from https://tenor.com/view/kakaotalk-emoticon-ompangie-pentol-buffering-gif-18260464
             // @kueape on tenor.com
             responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
