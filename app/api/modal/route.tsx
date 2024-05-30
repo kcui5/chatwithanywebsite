@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         console.log("API received")
         console.log(user_url)
 
-        const response = await axios.post('https://kcui5--handler-py-addwebsitetoknowledge-dev.modal.run', {
+        const response = await axios.post('https://kcui5--chatwithanywebsite-handler-addwebsitetoknowledge.modal.run', {
             user_url: user_url,
         }, {
             headers: {

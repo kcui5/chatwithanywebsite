@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         console.log(user_url)
         console.log(user_query)
 
-        const response = await axios.post('https://kcui5--handler-py-askwithknowledge-dev.modal.run', {
+        const response = await axios.post('https://kcui5--chatwithanywebsite-handler-askwithknowledge.modal.run', {
             user_url: user_url,
             user_query: user_query,
         }, {
