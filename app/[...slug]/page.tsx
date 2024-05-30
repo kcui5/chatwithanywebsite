@@ -49,9 +49,7 @@ function getUserUrl(slug: string | string[]): string {
   if (urlHeader === "ERROR") {
     return "invalid"
   }
-  for (let i = 0; i < slug.length; i++) {
-    console.log(slug[i])
-  }
+
   const decodedSlug = decodeSlug(slug.slice(1))
   let userURL = urlHeader + decodedSlug
   if (!isValidUrl(userURL)) {
@@ -67,14 +65,16 @@ const formSchema = z.object({
 export default function DynamicPage({ params } : { params: { slug: string | string[] } }) {
   //QUERY PARAMETERS ???
   const [fullPageLoading, setFullPageLoading] = useState(true)
-  const [invalidURL, setInvalidURL] = useState(false)
+  const [invalidURL, setInvalidURL] = useState('')
   const [gptResponse, setGptResponse] = useState('')
   const [responseLoading, setResponseLoading] = useState(false)
 
   const slug = params.slug
-  console.log(slug)
 
-  let userURL = ""
+  const userURL = getUserUrl(slug)
+  if (userURL === "invalid") {
+    setInvalidURL("Invalid")
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -85,14 +85,17 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
             user_url: userURL,
           })
         })
-        const data = await res.json()
-
-        if (data.status !== "Success") {
-          setInvalidURL(true)
+        console.log(res.status)
+        if (res.status == 429) {
+          setInvalidURL("Please try again later for")
+        } else if (res.status !== 200) {
+          setInvalidURL("Invalid")
+        } else {
+          setInvalidURL("Ask")
         }
         setFullPageLoading(false)
       } catch (error) {
-        setInvalidURL(true)
+        setInvalidURL("Invalid")
       }
     }
     if (userURL !== "invalid") {
@@ -122,31 +125,31 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
           user_query: msg,
         })
       })
-      const data = await res.json()
-      setGptResponse(data.message)
+      if (res.status == 429) {
+        setGptResponse("Please try again later...")
+      } else if (res.status !== 200) {
+        setGptResponse("Error")
+      } else {
+        const data = await res.json()
+        setGptResponse(data.message)
+      }
       setResponseLoading(false)
     } catch(err) {
-      setGptResponse('Error')
+      setGptResponse("Error")
     }    
-  }
-
-  userURL = getUserUrl(slug)
-
-  if (userURL === "invalid") {
-    setInvalidURL(true)
   }
 
   return (
     <div>
       <div className="p-10">
         <div>{
-          invalidURL && <h1 className="pb-2 text-2xl">Invalid URL {userURL}</h1>
+          invalidURL && <h1 className="pb-2 text-2xl">{invalidURL} {userURL}</h1>
         }</div>
         <div>{
-          fullPageLoading && <h1 className="pb-2 text-2xl">Loading... {userURL}</h1>
+          fullPageLoading && !invalidURL && <h1 className="pb-2 text-2xl">Loading... {userURL}</h1>
         }</div>
         <div>{
-          !fullPageLoading && <h1 className="pb-2 text-2xl">Ask {userURL}</h1>
+          !fullPageLoading && !invalidURL && <h1 className="pb-2 text-2xl">Ask {userURL}</h1>
         }</div>
         <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

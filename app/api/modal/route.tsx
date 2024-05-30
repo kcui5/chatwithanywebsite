@@ -19,12 +19,12 @@ export async function POST(req: Request) {
         console.log(response.data)
         if (response.data !== "Success") {
             console.log("Error adding to knowledge base")
-            return NextResponse.json({ status: response.data }, { status: 500 })
+            return NextResponse.json({ data: response.data }, { status: 500 })
         }
-        return NextResponse.json({ status: response.data }, { status: 200 })
+        return NextResponse.json({ data: response.data }, { status: 200 })
     } catch(err) {
         console.log("Error when adding website to knowledge base: ")
         console.log(err)
-        return NextResponse.json({ status: 'Error' }, { status: 500 })
+        return NextResponse.json({ data: "Error" }, { status: 500 })
     }
 }

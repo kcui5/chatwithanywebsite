@@ -24,8 +24,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: response.data }, { status: 200 })
     } catch(err) {
-        console.log("MODAL CALL ERROR")
+        console.log("Modal GPT call error: ")
         console.log(err)
-        return NextResponse.json({ message: 'Error' }, { status: 500 })
+        return NextResponse.json({ message: "Error" }, { status: 500 })
     }
 }
