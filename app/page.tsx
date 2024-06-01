@@ -7,7 +7,7 @@ export default function Home() {
 
         <p>Ask ChatGPT about any website, just paste the website URL to the end of this website.</p>
         <p>Ex. to chat with https://example.com navigate to https://chatwithanywebsite.vercel.app/https://example.com</p>
-        <p>Only works with http and https websites, and websites that don't block bots!</p>
+        <p>Only works with http and https websites, and websites that don`&apos;`t block bots!</p>
       </div>
     </div>
   )
