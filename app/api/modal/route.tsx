@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import axios from 'axios'
 
+export const maxDuration = 30
+
 export async function POST(req: Request) {
     try {
         const body = await req.json()
