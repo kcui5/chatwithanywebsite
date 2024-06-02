@@ -19,10 +19,6 @@ function isValidUrl(url: string): boolean {
   return urlRegex.test(url);
 }
 
-function isHttpOrHttps(urlHeader: string): boolean {
-  return urlHeader === "https%3A" || urlHeader === "http%3A"
-}
-
 function getDecodedUrlHeader(url: string): string {
   //Decodes url header into http or https
   if (url === "https%3A") {
@@ -30,7 +26,7 @@ function getDecodedUrlHeader(url: string): string {
   } else if (url === "http%3A") {
     return "http://"
   }
-  return "ERROR"
+  return decodeURIComponent(url) + "//"
 }
 
 function decodeSlug(slug: string | string[]): string {
@@ -41,19 +37,20 @@ function decodeSlug(slug: string | string[]): string {
 }
 
 function getUserUrl(slug: string | string[]): string {
-  if (!Array.isArray(slug) || !isHttpOrHttps(slug[0])) {
-    return "invalid"
+  if (!Array.isArray(slug)) {
+    return `Invalid ${slug}`
   }
 
   const urlHeader = getDecodedUrlHeader(slug[0])
-  if (urlHeader === "ERROR") {
-    return "invalid"
-  }
-
   const decodedSlug = decodeSlug(slug.slice(1))
   let userURL = urlHeader + decodedSlug
+
+  if (urlHeader !== "https://" && urlHeader !== "http://") {
+    return `Invalid ${userURL}`
+  }
+
   if (!isValidUrl(userURL)) {
-    return "invalid"
+    return `Invalid ${userURL}`
   }
   return userURL
 }
@@ -72,10 +69,7 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
   const slug = params.slug
 
   const userURL = getUserUrl(slug)
-  if (userURL === "invalid") {
-    setInvalidURL("Invalid")
-  }
-
+  
   useEffect(() => {
     async function fetchData() {
       try {
@@ -143,41 +137,47 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
     <div>
       <div className="p-10">
         <div>{
-          invalidURL && <h1 className="pb-2 text-2xl">{invalidURL} {userURL}</h1>
+          !userURL.startsWith("Invalid") && fullPageLoading && !invalidURL && <h1 className="pb-2 text-2xl">Loading... {userURL}</h1>
         }</div>
         <div>{
-          fullPageLoading && !invalidURL && <h1 className="pb-2 text-2xl">Loading... {userURL}</h1>
+          userURL.startsWith("Invalid") && <h1 className="pb-2 text-2xl">{userURL}</h1>
         }</div>
         <div>{
-          !fullPageLoading && !invalidURL && <h1 className="pb-2 text-2xl">Ask {userURL}</h1>
+          !userURL.startsWith("Invalid") && invalidURL && invalidURL !== "Ask" && <h1 className="pb-2 text-2xl">{invalidURL} {userURL}</h1>
         }</div>
-        <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="message"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ask GPT:</FormLabel>
-                <FormControl>
-                  <Textarea className="" placeholder="Ask me..." {...field} />
-                </FormControl>
-                <FormDescription>
-                  Chat with the website.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit">Submit</Button>
-          <div className="h-24">{
-            // Taken from https://tenor.com/view/kakaotalk-emoticon-ompangie-pentol-buffering-gif-18260464
-            // @kueape on tenor.com
-            responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
-          }</div>
-          <div>{gptResponse}</div>
-        </form>
-        </Form>
+        <div>{
+          !userURL.startsWith("Invalid") && !fullPageLoading && invalidURL === "Ask" && 
+            <div>
+              <h1 className="pb-2 text-2xl">Ask {userURL}</h1>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="message"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ask GPT:</FormLabel>
+                        <FormControl>
+                          <Textarea className="" placeholder="Ask me..." {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Chat with the website.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Submit</Button>
+                  <div className="h-24">{
+                    // Taken from https://tenor.com/view/kakaotalk-emoticon-ompangie-pentol-buffering-gif-18260464
+                    // @kueape on tenor.com
+                    responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
+                  }</div>
+                  <div>{gptResponse}</div>
+                </form>
+              </Form>
+            </div>
+        }</div>
       </div>
     </div>
   )

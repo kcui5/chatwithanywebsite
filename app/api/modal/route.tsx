@@ -17,6 +17,7 @@ export async function POST(req: Request) {
                 "Authorization": `Bearer ${process.env.CHATWITHANYWEBSITE_KEY}`,
             },
         })
+
         console.log("Received status: ")
         console.log(response.data)
         if (response.data !== "Success") {
