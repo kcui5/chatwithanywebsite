@@ -175,7 +175,7 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
                     // @kueape on tenor.com
                     responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
                   }</div>
-                  <div>
+                  <div className="w-screen">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {gptResponse}
                     </ReactMarkdown>
