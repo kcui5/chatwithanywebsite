@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import Image from 'next/image'
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 function isValidUrl(url: string): boolean {
   // Checks if the given url is valid
@@ -173,7 +175,11 @@ export default function DynamicPage({ params } : { params: { slug: string | stri
                     // @kueape on tenor.com
                     responseLoading && <Image src="/kakaotalk-emoticon.gif" alt="Loading..." width="72" height="72" className="pl-2"/>
                   }</div>
-                  <div>{gptResponse}</div>
+                  <div>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {gptResponse}
+                    </ReactMarkdown>
+                  </div>
                 </form>
               </Form>
             </div>
